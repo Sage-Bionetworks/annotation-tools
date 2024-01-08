@@ -15,6 +15,10 @@
 
 See 1-4 [here in main Genie](https://github.com/Sage-Bionetworks/Genie#developing-locally) to install the dependencies required.
 
+#### Annotation dependencies
+If you are updating any part of the `annotation_suite_wrapper.sh` script, you will need to 
+
+
 ## The development life cycle
 
 ### Development
@@ -26,9 +30,11 @@ See 1-4 [here in main Genie](https://github.com/Sage-Bionetworks/Genie#developin
     git checkout -b JIRA-123-new-feature
     ```
 
-2. Proceed on to **Testing**
+2. Make any relevant changes. 
 
-3. Once you have completed all the steps above, in Github, create a pull request from your feature branch to the `master` branch of Sage-Bionetworks/Genie.
+3. Proceed on to **Testing**
+
+4. Once you have completed all the steps above, in Github, create a pull request from your feature branch to the `master` branch of Sage-Bionetworks/Genie.
 
 > *A code maintainer must review and accept your pull request.*
 
@@ -59,6 +65,14 @@ bats test
 #### Integration Test
 
 Be sure to run the relevant parts of the test main genie pipeline as part of [these instructions](https://github.com/Sage-Bionetworks/Genie/#developing-locally) that would be affected by changes to this repo.
+
+#### Testing annotator shell script changes
+
+If you are making any changes to the `annotation_suite_wrapper.sh` script, please see here for testing that: [Updating the annotation shell script in annotation-tools](https://sagebionetworks.jira.com/wiki/spaces/APGD/pages/3016687662/Variant+Annotation#Updating-the-annotation-shell-script-in-annotation-tools)
+
+#### Testing updated annotator.jar file
+
+If you are updating the `annotator.jar` file, please see here for how to go about testing that using this repo: [Variant Annotation](https://sagebionetworks.jira.com/wiki/spaces/APGD/pages/3016687662/Variant+Annotation)
 
 #### Docker
 
