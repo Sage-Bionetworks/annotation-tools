@@ -20,14 +20,15 @@ See 1-4 [here in main Genie](https://github.com/Sage-Bionetworks/Genie#developin
 ### Development
 
 1. Create a feature branch off the `master` branch. If there is a GitHub/JIRA issue that you are addressing, name the branch after the issue with some more detail (like `{GH|JIRA}-123-add-some-new-feature`).
+
     ```
     git checkout master
     git checkout -b JIRA-123-new-feature
     ```
 
-1. Proceed on to **Testing**
+2. Proceed on to **Testing**
 
-1. Once you have completed all the steps above, in Github, create a pull request from your feature branch to the `master` branch of Sage-Bionetworks/Genie.
+3. Once you have completed all the steps above, in Github, create a pull request from your feature branch to the `master` branch of Sage-Bionetworks/Genie.
 
 > *A code maintainer must review and accept your pull request.*
 
