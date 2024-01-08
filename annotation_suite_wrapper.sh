@@ -35,7 +35,8 @@ command -v java >/dev/null 2>&1 || {
 function usage {
     echo "annotation_suite_wrapper.sh"
     echo -e "\t-i | --input-directory               input data directory for processing mutation data files [REQUIRED]"
-    echo -e "\t-o | --output-directory              output directory to write processed and annotated mutation data files, and annotation error reports to [REQUIRED]"
+    echo -e "\t-o | --output-directory              output directory to write processed and annotated mutation data files [REQUIRED]"
+    echo -e "\t-o | --error-directory               error directory to write annotation error reports to [REQUIRED]"
     echo -e "\t-m | --merged-mutation-file          path to write the merged mutation file for the center [REQUIRED]"
     echo -e "\t-c | --center-name                   name of the center being processed [REQUIRED]"
     echo -e "\t-s | --sequence-source               name of the sequence source used by the center (i.e., WXS, WGS) [REQUIRED]"
@@ -54,6 +55,11 @@ for i in "$@"; do
     -o=* | --output-directory=*)
         OUTPUT_DATA_DIRECTORY="${i#*=}"
         echo -e "\tOUTPUT_DATA_DIRECTORY=${OUTPUT_DATA_DIRECTORY}"
+        shift
+        ;;
+    -e=* | --error-directory=*)
+        ERROR_DIRECTORY="${i#*=}"
+        echo -e "\tERROR_DIRECTORY=${ERROR_DIRECTORY}"
         shift
         ;;
     -m=* | --merged-mutation-file=*)
@@ -83,6 +89,7 @@ done
 # make sure these input arguments exist
 if [[ -z "${INPUT_DATA_DIRECTORY}" ||
     -z "${OUTPUT_DATA_DIRECTORY}" ||
+    -z "${ERROR_DIRECTORY}" ||
     -z "${MERGED_MUTATION_FILENAME}" ||
     -z "${CENTER_NAME}" ||
     -z "${SEQUENCE_SOURCE}" ||
@@ -103,7 +110,6 @@ fi
 
 PROCESSED_SUB_DIR_NAME="${OUTPUT_DATA_DIRECTORY}/processed"
 ANNOTATED_SUB_DIR_NAME="${OUTPUT_DATA_DIRECTORY}/annotated"
-ERROR_SUB_DIR_NAME="${OUTPUT_DATA_DIRECTORY}/error_report"
 FILE_EXTENSIONS_LIST="vcf,maf,txt,tsv" # text files are treated as MAFs to handle names like data_mutations_extended.txt
 
 STANDARDIZE_MUTATION_DATA_SCRIPT=${ANNOTATION_SUITE_SCRIPTS_HOME}/standardize_mutation_data.py
@@ -136,7 +142,7 @@ function standardizeMutationFilesFromDirectory {
 function annotateMAF {
     input_file="$1"
     output_file=${ANNOTATED_SUB_DIR_NAME}/$(basename "${input_file}").annotated
-    error_report=${ERROR_SUB_DIR_NAME}/$(basename "${input_file}").failed_annotations_report
+    error_report=${ERROR_DIRECTORY}/$(basename "${input_file}").failed_annotations_report
     echo -e "\t[INFO] annotateMAF(), annotating MAF: ${input_file} --> ${output_file}"
     echo -e "\t[INFO] annotateMAF(), failed annotations report location for MAF: ${error_report}"
     java -Xmx48g ${JAVA_SSL_ARGS} \
@@ -180,7 +186,7 @@ function mergeMAFsInDirectory {
 initAndCleanWorkingDirectory ${OUTPUT_DATA_DIRECTORY}
 initAndCleanWorkingDirectory ${PROCESSED_SUB_DIR_NAME}
 initAndCleanWorkingDirectory ${ANNOTATED_SUB_DIR_NAME}
-initAndCleanWorkingDirectory ${ERROR_SUB_DIR_NAME}
+initAndCleanWorkingDirectory ${ERROR_DIRECTORY}
 
 # standardize mutation files from ${INPUT_DATA_DIRECTORY}
 standardizeMutationFilesFromDirectory
