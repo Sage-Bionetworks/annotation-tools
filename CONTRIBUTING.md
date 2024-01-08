@@ -13,18 +13,17 @@
 
 ### Install development dependencies
 
-See 1-4 [here in main Genie](https://github.com/Sage-Bionetworks/Genie#developing-locally) to get the dependencies.
+See 1-4 [here in main Genie](https://github.com/Sage-Bionetworks/Genie#developing-locally) to install the dependencies required.
 
 ## The development life cycle
 
 ### Development
 
 1. Create a feature branch off the `master` branch. If there is a GitHub/JIRA issue that you are addressing, name the branch after the issue with some more detail (like `{GH|JIRA}-123-add-some-new-feature`).
-
-```
-git checkout master
-git checkout -b JIRA-123-new-feature
-```
+    ```
+    git checkout master
+    git checkout -b JIRA-123-new-feature
+    ```
 
 1. Proceed on to **Testing**
 
