@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-source ../annotation-tools/annotation_suite_functions.sh
+source annotation-tools/annotation_suite_functions.sh
 
 # verify python3 and java installations
 command -v python3 >/dev/null 2>&1 || {
