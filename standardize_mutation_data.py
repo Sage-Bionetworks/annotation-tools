@@ -86,7 +86,8 @@ MAF_HEADER = [
     "gnomAD_FIN_AF",
     "gnomAD_NFE_AF",
     "gnomAD_OTH_AF",
-    "gnomAD_SAS_AF"
+    "gnomAD_SAS_AF",
+    "Transcript_Exon"
 ]
 
 VCF_FIXED_HEADER_NON_CASE_IDS = [
