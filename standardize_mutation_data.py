@@ -787,6 +787,7 @@ def create_maf_record_from_maf(filename, data, center_name, sequence_source):
     maf_data["Center"] = resolve_center_name(data, center_name)
     maf_data["Sequencer"] = resolve_sequencer(data)
     maf_data["FILTER"] = data.get("FILTER", "")
+    maf_data["Transcript_Exon"] = data.get("Transcript_Exon", "")
 
     # if the verification status if "Verified" then the validation status can be set to "Valid"
     if maf_data["Verification_Status"] == "Verified":
