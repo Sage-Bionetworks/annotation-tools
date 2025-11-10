@@ -142,24 +142,33 @@ function standardizeMutationFilesFromDirectory {
 #   $1: input_file - input file to annotate
 function annotateMAF {
     input_file="$1"
-    output_file=${ANNOTATED_SUB_DIR_NAME}/$(basename "${input_file}").annotated
-    error_report=${ERROR_DIRECTORY}/$(basename "${input_file}").failed_annotations_report
+    base_name=$(basename "${input_file}")
+    output_file="${ANNOTATED_SUB_DIR_NAME}/${base_name}.annotated"
+    unannotated_file="${ANNOTATED_SUB_DIR_NAME}/${base_name}.unannotated"
+    error_report="${ERROR_DIRECTORY}/${base_name}.failed_annotations_report"
+
     echo -e "\t[INFO] annotateMAF(), annotating MAF: ${input_file} --> ${output_file}"
     echo -e "\t[INFO] annotateMAF(), failed annotations report location for MAF: ${error_report}"
-    java -Xmx48g ${JAVA_SSL_ARGS} \
-        -jar ${GENOME_NEXUS_ANNOTATOR_JAR} \
-        --filename "${input_file}" \
-        --output-filename "${output_file}" \
-        --isoform-override ${GENOME_NEXUS_ANNOTATOR_ISOFORM} \
-        -e "${error_report}" \
-        -p ${GENOME_NEXUS_ANNOTATOR_POST_SIZE} -r
+
+    # Call Python wrapper instead of java -jar
+    python3 genome_nexus_annotator_wrapper.py \
+        -f "${input_file}" \
+        -a "${GENOME_NEXUS_ANNOTATOR_JAR}" \
+        -i "${GENOME_NEXUS_ANNOTATOR_ISOFORM}" \
+        -an "${output_file}" \
+        -unan "${unannotated_file}"
 
     if [ $? -gt 0 ]; then
         echo -e "\n[ERROR] annotateMAF(), error encountered while running the genome nexus annotation pipeline"
         exit 1
     fi
-    check_file_existence "${error_report}"
+
+    # The python script does NOT produce a "failed annotation report" file like the java command used to.
+    # If your workflow requires it, you can create an empty placeholder:
+    touch "${error_report}"
+
     check_file_existence "${output_file}"
+    check_file_existence "${unannotated_file}"
 }
 
 # Function calls annotation function on all files in the
