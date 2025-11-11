@@ -148,17 +148,21 @@ function annotateMAF {
     error_report="${ERROR_DIRECTORY}/${base_name}.failed_annotations_report"
 
     echo -e "\t[INFO] annotateMAF(), annotating MAF: ${input_file} --> ${output_file}"
-    echo -e "\t[INFO] annotateMAF(), failed annotations report location for MAF: ${error_report}"
+    echo -e "\t[INFO] annotateMAF(), failed annotations report will be written to: ${error_report}"
 
-    # Call Python wrapper instead of java -jar
+    # Call Python wrapper
     python3 genome_nexus_annotator_wrapper.py \
         -f "${input_file}" \
+        -an "${output_file}" \
+        -unan "${unannotated_file}" \
         -a "${GENOME_NEXUS_ANNOTATOR_JAR}" \
         -i "${GENOME_NEXUS_ANNOTATOR_ISOFORM}" \
-        -an "${output_file}" \
-        -unan "${unannotated_file}"
+        -e "${error_report}" \
+        -t "${GENOME_NEXUS_JAVA_TRUSTSTORE_FLAGS}" \
+        -p 1000 \
+        -m 5
 
-    if [ $? -gt 0 ]; then
+    if [ $? -ne 0 ]; then
         echo -e "\n[ERROR] annotateMAF(), error encountered while running the genome nexus annotation pipeline"
         exit 1
     fi
@@ -169,6 +173,8 @@ function annotateMAF {
 
     check_file_existence "${output_file}"
     check_file_existence "${unannotated_file}"
+    check_file_existence "${error_report}"
+    
 }
 
 # Function calls annotation function on all files in the

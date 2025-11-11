@@ -7,8 +7,6 @@ ANNOTATED_MAF_FILE_EXT = ".annotated"
 UNANNOTATED_MAF_FILE_EXT = ".unannotated"
 HGVSP_SHORT_COLUMN = "HGVSp_Short"
 
-MAX_ANNOTATION_ATTEMPTS = 10
-
 
 def get_header(data_file):
     """
@@ -86,7 +84,15 @@ def split_maf_file_records(filename, ordered_header_columns):
 
 
 def run_genome_nexus_annotator(
-    annotator_jar, input_maf, output_maf, isoform, attempt_num, ordered_header_columns
+    annotator_jar: str,
+    input_maf: str,
+    output_maf: str,
+    error_report: str,
+    isoform: str,
+    attempt_num: int,
+    ordered_header_columns: list,
+    truststore_file: str,
+    post_size: int,
 ):
     """
     Calls the Genome Nexus annotator and returns a list of annotated and unannotated records.
@@ -95,37 +101,30 @@ def run_genome_nexus_annotator(
     - unannotated records:
         - records which were not successfully annotated by Genome Nexus OR
         - records which were successfully annotated by Genome Nexus but are non-coding so HGVSp_Short column is empty.
-        
-    java -Xmx48g ${JAVA_SSL_ARGS} \
--        -jar ${GENOME_NEXUS_ANNOTATOR_JAR} \
--        --filename "${input_file}" \
--        --output-filename "${output_file}" \
--        --isoform-override ${GENOME_NEXUS_ANNOTATOR_ISOFORM} \
--        -e "${error_report}" \
--        -p ${GENOME_NEXUS_ANNOTATOR_POST_SIZE} -r
-    """
-    
-    print("Annotation attempt: %s" % (str(attempt_num)))
-    subprocess.call(
-        [
-            "java",
-            "-Xmx48g", 
-            truststore_file,
-            "-jar",
-            annotator_jar,
-            "--filename",
-            input_maf,
-            "--output-filename",
-            output_maf,
-            "--isoform-override",
-            isoform,
-            "-r",
-            "-e"
-            error_report,
-            "-p",
-            genome_nexus_annotator_post_size,
-        ]
-    )
+    """ 
+    print(f"Annotation attempt: {attempt_num}")
+
+    cmd = [
+        "java",
+        "-Xmx48g",
+        truststore_file,
+        "-jar",
+        annotator_jar,
+        "--filename",
+        input_maf,
+        "--output-filename",
+        output_maf,
+        "--isoform-override",
+        isoform,
+        "-e",
+        error_report,
+        "-p",
+        str(post_size),
+        "-r",
+    ]
+
+    subprocess.check_call(cmd)
+
     annotated_records, unannotated_records = split_maf_file_records(
         output_maf, ordered_header_columns
     )
@@ -133,11 +132,12 @@ def run_genome_nexus_annotator(
     # therefore the header in the output MAF from GN may not match the column order of the data values
     # in the returned annotated_records,unannotated_records. This is resolved by overwriting the output_maf
     # with the values of annotated_records
-    if ordered_header_columns != []:
+    if ordered_header_columns:
         ordered_header = "\t".join(ordered_header_columns) + "\n"
         write_records_to_maf(
             output_maf, get_comments(output_maf), ordered_header, annotated_records
         )
+
     return annotated_records, unannotated_records
 
 
@@ -192,7 +192,16 @@ def split_final_output(output_maf):
     return ann_data, unann_data
 
 
-def genome_nexus_annotator_wrapper(annotator_jar, input_maf, output_maf, isoform):
+def genome_nexus_annotator_wrapper(
+    annotator_jar,
+    input_maf,
+    output_maf,
+    isoform,
+    error_report,
+    truststore_file,
+    post_size,
+    max_attempts,
+):
     """
     Runs Genome Nexus annotator on input MAF and saves results to designated output MAF.
     If all records are not successfully annotated on first attempt, then script will continue
@@ -202,30 +211,39 @@ def genome_nexus_annotator_wrapper(annotator_jar, input_maf, output_maf, isoform
     """
     attempt_num = 1
     annotated_records, unannotated_records = run_genome_nexus_annotator(
-        annotator_jar, input_maf, output_maf, isoform, attempt_num, []
+        annotator_jar,
+        input_maf,
+        output_maf,
+        error_report,
+        isoform,
+        attempt_num,
+        [],
+        truststore_file,
+        post_size,
     )
+
     if len(unannotated_records) == 0:
-        # print('All records annotated successfully on first attempt - nothing to do. Output file saved to: %s' % (output_maf))
         return
+
     annotated_file_comments = get_comments(output_maf)
     annotated_file_header = get_header(output_maf)
-    ordered_header_columns = map(str.strip, annotated_file_header.split("\t"))
+    ordered_header_columns = list(map(str.strip, annotated_file_header.split("\t")))
 
     intermediate_mafs = []
-    while len(unannotated_records) > 0 and attempt_num <= MAX_ANNOTATION_ATTEMPTS:
+    while len(unannotated_records) > 0 and attempt_num <= max_attempts:
         attempt_num += 1
-        isoform_extension = "_%s_attempt_%s" % (isoform, str(attempt_num))
+        isoform_extension = f"_{isoform}_attempt_{attempt_num}"
         input_unannotated_maf = input_maf + UNANNOTATED_MAF_FILE_EXT + isoform_extension
         output_reannotated_maf = input_maf + ANNOTATED_MAF_FILE_EXT + isoform_extension
-        intermediate_mafs.extend([input_unannotated_maf, output_reannotated_maf])
+        intermediate_mafs += [input_unannotated_maf, output_reannotated_maf]
 
-        # save unannotated records to new input maf and then run annotator again
         write_records_to_maf(
             input_unannotated_maf,
             annotated_file_comments,
             annotated_file_header,
             unannotated_records,
         )
+
         input_unannotated_maf_header = get_header(input_unannotated_maf)
         if input_unannotated_maf_header != annotated_file_header:
             print(
@@ -233,99 +251,114 @@ def genome_nexus_annotator_wrapper(annotator_jar, input_maf, output_maf, isoform
                 % (input_unannotated_maf, output_maf)
             )
             sys.exit(2)
-        new_annotated_records, unannotated_records = run_genome_nexus_annotator(
+        new_annotated, unannotated_records = run_genome_nexus_annotator(
             annotator_jar,
             input_unannotated_maf,
             output_reannotated_maf,
+            error_report,
             isoform,
             attempt_num,
             ordered_header_columns,
+            truststore_file,
+            post_size,
         )
 
-        # if there aren't any new annotated records then no improvement was made - exit while loop
-        if len(new_annotated_records) == 0:
+        if len(new_annotated) == 0:
+            # if there aren't any new annotated records then no improvement was made - exit while loop
             print(
                 "Annotation attempt %s did not produce any newly annotated records - saving data to output file: %s"
                 % (str(attempt_num), output_maf)
             )
             break
 
-        output_reannotated_maf_header = get_header(output_reannotated_maf)
-        if output_reannotated_maf_header != annotated_file_header:
-            print(
-                "ERROR: header for %s does not match the header in %s!"
-                % (output_reannotated_maf, output_maf)
-            )
-            sys.exit(2)
-        annotated_records.extend(new_annotated_records)
+        annotated_records.extend(new_annotated)
 
-    # log whether unannotated records remain and max number of attempts allowed has been reached
-    if len(unannotated_records) > 0 and attempt_num == MAX_ANNOTATION_ATTEMPTS:
-        print(
-            "Maximum number of attempts reached for annotating MAF - saving data to output file: %s"
-            % (output_maf)
-        )
-
-    # combine annotated and unannotated records and save data to output maf
-    compiled_recoords = annotated_records[:]
-    compiled_recoords.extend(unannotated_records)
+    compiled = annotated_records + unannotated_records
     write_records_to_maf(
-        output_maf, annotated_file_comments, annotated_file_header, compiled_recoords
-    )
-    print(
-        "Saved compiled annotated and unannotated records to output file: %s"
-        % (output_maf)
+        output_maf, annotated_file_comments, annotated_file_header, compiled
     )
 
-    # remove intermediate MAFs
-    if len(intermediate_mafs) > 0:
+    if intermediate_mafs:
         delete_intermediate_mafs(intermediate_mafs)
 
 
 def main():
-    # get command line arguments
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
-        "-f", "--input_maf", required=True, help="Input maf file name", type=str
-    )
-    parser.add_argument(
-        "-a",
-        "--annotator_jar_path",
-        required=True,
-        help='Path to the annotator jar file.  An example can be found in "/data/curation/annotation/annotator/annotationPipeline-1.0.0.jar" on dashi-dev',
-        type=str,
-    )
-    parser.add_argument(
-        "-i",
-        "--isoform",
-        required=True,
-        help="uniprot/mskcc annotation isoform.",
-        type=str,
+        "-f", "--input_maf", required=True, help="Input MAF file path", type=str
     )
     parser.add_argument(
         "-an",
         "--annotated_maf",
         required=True,
-        help="Annotated output maf file name",
+        help="Output annotated MAF file path",
         type=str,
     )
     parser.add_argument(
         "-unan",
         "--unannotated_maf",
         required=True,
-        help="Unannotated output maf file name",
+        help="Output unannotated MAF file path",
         type=str,
     )
+    parser.add_argument(
+        "-a",
+        "--annotator_jar_path",
+        required=True,
+        help="Path to Genome Nexus annotator JAR",
+        type=str,
+    )
+    parser.add_argument(
+        "-i",
+        "--isoform",
+        required=True,
+        help="Isoform override (uniprot or mskcc)",
+        type=str,
+    )
+    parser.add_argument(
+        "-e",
+        "--error_report_path",
+        required=True,
+        help="Path for failed annotations error report",
+        type=str,
+    )
+    parser.add_argument(
+        "-t",
+        "--truststore_file",
+        required=True,
+        help="Path to Java truststore file",
+        type=str,
+    )
+    parser.add_argument(
+        "-p",
+        "--post_size",
+        required=True,
+        default=1000,
+        help="Genome Nexus POST size",
+        type=int,
+    )
+    parser.add_argument(
+        "-m",
+        "--max_annotation_attempts",
+        required=False,
+        default=10,
+        type=int,
+        help="Maximum re-annotation retries (default=10)",
+    )
+
     args = parser.parse_args()
-
-    input_maf = args.input_maf
-    output_maf = input_maf + "_annotated"
-    isoform = args.isoform
-    annotator_jar = args.annotator_jar_path
-    annotated_file = args.annotated_maf
-    unannotated_file = args.unannotated_maf
-
-    genome_nexus_annotator_wrapper(annotator_jar, input_maf, output_maf, isoform)
+    output_maf = args.input_maf + "_annotated"
+    genome_nexus_annotator_wrapper(
+        annotator_jar=args.annotator_jar_path,
+        input_maf=args.input_maf,
+        output_maf=output_maf,
+        isoform=args.isoform,
+        error_report=args.error_report_path,
+        truststore_file=args.truststore_file,
+        post_size=args.post_size,
+        max_attempts=args.max_annotation_attempts,
+    )
 
     """
     Split the final output to two files 1) Annotated 2) Unannotated records
@@ -341,26 +374,26 @@ def main():
 
     if len(annotated) != 0 and len(unannotated) == 0:
         ann_data = comments + header + annotated
-        open(annotated_file, "w").write(ann_data)
+        open(args.annotated_file, "w").write(ann_data)
         print(
             "All the records are annotated and the output is saved to file: %s"
-            % (annotated_file)
+            % (args.annotated_file)
         )
     elif len(annotated) != 0 and len(unannotated) != 0:
         ann_data = comments + header + annotated
         unan_data = comments + header + unannotated
-        open(annotated_file, "w").write(ann_data)
-        open(unannotated_file, "w").write(unan_data)
+        open(args.annotated_file, "w").write(ann_data)
+        open(args.unannotated_file, "w").write(unan_data)
         print(
             "Annoatated records are save to: %s and Unannotated records are saved to: %s"
-            % (annotated_file, unannotated_file)
+            % (args.annotated_file, args.unannotated_file)
         )
     elif len(annotated) == 0 and len(unannotated) != 0:
         unan_data = comments + header + unannotated
-        open(unannotated_file, "w").write(unan_data)
+        open(args.unannotated_file, "w").write(unan_data)
         print(
             "No records were annoated, the output is saved to file: %s"
-            % (unannotated_file)
+            % (args.unannotated_file)
         )
 
 
