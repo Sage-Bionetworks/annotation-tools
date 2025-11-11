@@ -1,3 +1,6 @@
+"""
+Adapted from cBioprotal's https://github.com/cBioPortal/datahub-study-curation-tools/blob/master/GN-annotation-wrapper/GN_annotation_wrapper.py
+"""
 import os
 import sys
 import subprocess
