@@ -114,6 +114,7 @@ ANNOTATED_SUB_DIR_NAME="${OUTPUT_DATA_DIRECTORY}/annotated"
 FILE_EXTENSIONS_LIST="vcf,maf,txt,tsv" # text files are treated as MAFs to handle names like data_mutations_extended.txt
 
 STANDARDIZE_MUTATION_DATA_SCRIPT=${ANNOTATION_SUITE_SCRIPTS_HOME}/standardize_mutation_data.py
+GENOME_NEXUS_ANNOTATION_WRAPPER_SCRIPT=${ANNOTATION_SUITE_SCRIPTS_HOME}/genome_nexus_annotation_wrapper.py
 GENOME_NEXUS_ANNOTATOR_JAR=${ANNOTATION_SUITE_SCRIPTS_HOME}/annotator.jar
 MERGE_MAFS_SCRIPT=${ANNOTATION_SUITE_SCRIPTS_HOME}/merge_mafs.py
 
@@ -151,7 +152,7 @@ function annotateMAF {
     echo -e "\t[INFO] annotateMAF(), failed annotations report will be written to: ${error_report}"
 
     # Call Python wrapper
-    python3 genome_nexus_annotation_wrapper.py \
+    python3 ${GENOME_NEXUS_ANNOTATION_WRAPPER_SCRIPT} \
         -f "${input_file}" \
         -an "${output_file}" \
         -unan "${unannotated_file}" \
@@ -163,7 +164,7 @@ function annotateMAF {
         -m 5
 
     if [ $? -ne 0 ]; then
-        echo -e "\n[ERROR] annotateMAF(), error encountered while running the genome nexus annotation pipeline"
+        echo -e "\n[ERROR] annotateMAF(), error encountered while running ${GENOME_NEXUS_ANNOTATION_WRAPPER_SCRIPT}"
         exit 1
     fi
 
