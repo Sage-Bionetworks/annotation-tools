@@ -106,7 +106,7 @@ if ! [ -f ${SSL_CERT_PATH} ]; then
     echo "Could not find SSL certificate: ${SSL_CERT_PATH} - please make sure this certificate exists and is present in ${ANNOTATION_SUITE_SCRIPTS_HOME}. Exiting..."
     exit 1
 else
-    JAVA_SSL_ARGS="-Djavax.net.ssl.trustStore=${SSL_CERT_PATH}"
+    JAVA_SSL_ARGS="${SSL_CERT_PATH}"
 fi
 
 PROCESSED_SUB_DIR_NAME="${OUTPUT_DATA_DIRECTORY}/processed"
@@ -151,14 +151,14 @@ function annotateMAF {
     echo -e "\t[INFO] annotateMAF(), failed annotations report will be written to: ${error_report}"
 
     # Call Python wrapper
-    python3 genome_nexus_annotator_wrapper.py \
+    python3 genome_nexus_annotation_wrapper.py \
         -f "${input_file}" \
         -an "${output_file}" \
         -unan "${unannotated_file}" \
         -a "${GENOME_NEXUS_ANNOTATOR_JAR}" \
         -i "${GENOME_NEXUS_ANNOTATOR_ISOFORM}" \
         -e "${error_report}" \
-        -t "${GENOME_NEXUS_JAVA_TRUSTSTORE_FLAGS}" \
+        -t "${JAVA_SSL_ARGS}" \
         -p 1000 \
         -m 5
 

@@ -16,7 +16,7 @@ def get_header(data_file):
     Returns file header.
     """
     header = ""
-    with open(data_file, "rU") as f:
+    with open(data_file, "r") as f:
         for line in f.readlines():
             if not line.startswith("#"):
                 header = line
@@ -29,7 +29,7 @@ def get_comments(data_file):
     Returns file comments.
     """
     comments = []
-    with open(data_file, "rU") as f:
+    with open(data_file, "r") as f:
         for line in f.readlines():
             if line.startswith("#"):
                 comments.append(line)
@@ -58,17 +58,16 @@ def split_maf_file_records(filename, ordered_header_columns):
     """
     annotated_records = []
     unannotated_records = []
-
     comment_lines = get_comments(filename)
     header = get_header(filename)
-    columns = map(str.strip, header.split("\t"))
+    columns = list(map(str.strip, header.split("\t")))
     if not ordered_header_columns:
         ordered_header_columns = columns[:]
     if not HGVSP_SHORT_COLUMN in columns:
         print(f"Could not find {HGVSP_SHORT_COLUMN} column in file header - exiting...")
         sys.exit(1)
 
-    with open(filename, "rU") as f:
+    with open(filename, "r") as f:
         header_processed = False
         for line in f.readlines():
             if line.startswith("#"):
@@ -110,7 +109,7 @@ def run_genome_nexus_annotator(
     cmd = [
         "java",
         "-Xmx48g",
-        truststore_file,
+        f"-Djavax.net.ssl.trustStore={truststore_file}",
         "-jar",
         annotator_jar,
         "--filename",
@@ -266,13 +265,13 @@ def genome_nexus_annotator_wrapper(
             post_size,
         )
 
-        if len(new_annotated) == 0:
-            # if there aren't any new annotated records then no improvement was made - exit while loop
-            print(
-                "Annotation attempt %s did not produce any newly annotated records - saving data to output file: %s"
-                % (str(attempt_num), output_maf)
-            )
-            break
+        #if len(new_annotated) == 0:
+        #    # if there aren't any new annotated records then no improvement was made - exit while loop
+        #    print(
+        #        "Annotation attempt %s did not produce any newly annotated records - saving data to output file: %s"
+        #        % (str(attempt_num), output_maf)
+        #    )
+        #    break
 
         annotated_records.extend(new_annotated)
 
@@ -377,26 +376,26 @@ def main():
 
     if len(annotated) != 0 and len(unannotated) == 0:
         ann_data = comments + header + annotated
-        open(args.annotated_file, "w").write(ann_data)
+        open(args.annotated_maf, "w").write(ann_data)
         print(
             "All the records are annotated and the output is saved to file: %s"
-            % (args.annotated_file)
+            % (args.annotated_maf)
         )
     elif len(annotated) != 0 and len(unannotated) != 0:
         ann_data = comments + header + annotated
         unan_data = comments + header + unannotated
-        open(args.annotated_file, "w").write(ann_data)
-        open(args.unannotated_file, "w").write(unan_data)
+        open(args.annotated_maf, "w").write(ann_data)
+        open(args.unannotated_maf, "w").write(unan_data)
         print(
-            "Annoatated records are save to: %s and Unannotated records are saved to: %s"
-            % (args.annotated_file, args.unannotated_file)
+            "Annotated records are save to: %s and unannotated records are saved to: %s"
+            % (args.annotated_maf, args.unannotated_maf)
         )
     elif len(annotated) == 0 and len(unannotated) != 0:
         unan_data = comments + header + unannotated
-        open(args.unannotated_file, "w").write(unan_data)
+        open(args.unannotated_maf, "w").write(unan_data)
         print(
-            "No records were annoated, the output is saved to file: %s"
-            % (args.unannotated_file)
+            "No records were annotated, the output is saved to file: %s"
+            % (args.unannotated_maf)
         )
 
 
