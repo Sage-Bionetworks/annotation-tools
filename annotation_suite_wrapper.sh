@@ -173,7 +173,6 @@ function annotateMAF {
     touch "${error_report}"
 
     check_file_existence "${output_file}"
-    check_file_existence "${unannotated_file}"
     check_file_existence "${error_report}"
     
 }
