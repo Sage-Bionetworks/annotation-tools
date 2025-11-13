@@ -145,7 +145,6 @@ function annotateMAF {
     input_file="$1"
     base_name=$(basename "${input_file}")
     output_file="${ANNOTATED_SUB_DIR_NAME}/${base_name}.annotated"
-    unannotated_file="${ANNOTATED_SUB_DIR_NAME}/${base_name}.unannotated"
     error_report="${ERROR_DIRECTORY}/${base_name}.failed_annotations_report"
 
     echo -e "\t[INFO] annotateMAF(), annotating MAF: ${input_file} --> ${output_file}"
@@ -154,8 +153,7 @@ function annotateMAF {
     # Call Python wrapper
     python3 ${GENOME_NEXUS_ANNOTATION_WRAPPER_SCRIPT} \
         -f "${input_file}" \
-        -an "${output_file}" \
-        -unan "${unannotated_file}" \
+        -o "${output_file}" \
         -a "${GENOME_NEXUS_ANNOTATOR_JAR}" \
         -i "${GENOME_NEXUS_ANNOTATOR_ISOFORM}" \
         -e "${error_report}" \

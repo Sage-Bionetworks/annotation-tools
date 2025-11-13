@@ -291,17 +291,10 @@ def main():
         "-f", "--input_maf", required=True, help="Input MAF file path", type=str
     )
     parser.add_argument(
-        "-an",
-        "--annotated_maf",
+        "-o",
+        "--output_maf",
         required=True,
         help="Output annotated MAF file path",
-        type=str,
-    )
-    parser.add_argument(
-        "-unan",
-        "--unannotated_maf",
-        required=True,
-        help="Output unannotated MAF file path",
         type=str,
     )
     parser.add_argument(
@@ -376,26 +369,29 @@ def main():
 
     if len(annotated) != 0 and len(unannotated) == 0:
         ann_data = comments + header + annotated
-        open(args.annotated_maf, "w").write(ann_data)
+        open(args.output_maf, "w").write(ann_data)
         print(
             "All the records are annotated and the output is saved to file: %s"
-            % (args.annotated_maf)
+            % (args.output_maf)
         )
     elif len(annotated) != 0 and len(unannotated) != 0:
         ann_data = comments + header + annotated
         unan_data = comments + header + unannotated
-        open(args.annotated_maf, "w").write(ann_data)
-        open(args.unannotated_maf, "w").write(unan_data)
+
+        # Concatenate both datasets together
+        combined_data = ann_data + unan_data
+        with open(args.output_maf, "w") as f:
+            f.writelines(combined_data)
+
         print(
-            "Annotated records are save to: %s and unannotated records are saved to: %s"
-            % (args.annotated_maf, args.unannotated_maf)
+            f"Combined annotated and unannotated records are saved to: {args.combined_maf}"
         )
     elif len(annotated) == 0 and len(unannotated) != 0:
         unan_data = comments + header + unannotated
-        open(args.unannotated_maf, "w").write(unan_data)
+        open(args.output_maf, "w").write(unan_data)
         print(
-            "No records were annotated, the output is saved to file: %s"
-            % (args.unannotated_maf)
+            "No records were annotated, the unannotated output is saved to file: %s"
+            % (args.output_maf)
         )
 
 
