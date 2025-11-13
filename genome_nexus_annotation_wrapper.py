@@ -384,7 +384,7 @@ def main():
             f.writelines(combined_data)
 
         print(
-            f"Combined annotated and unannotated records are saved to: {args.combined_maf}"
+            f"Combined annotated and unannotated records are saved to: {args.output_maf}"
         )
     elif len(annotated) == 0 and len(unannotated) != 0:
         unan_data = comments + header + unannotated
